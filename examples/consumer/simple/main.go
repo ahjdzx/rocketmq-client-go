@@ -20,39 +20,59 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
+	"log"
 	"time"
 
 	"github.com/apache/rocketmq-client-go"
 	"github.com/apache/rocketmq-client-go/consumer"
 	"github.com/apache/rocketmq-client-go/primitive"
+	"github.com/apache/rocketmq-client-go/rlog"
 )
 
 func main() {
-	c, _ := rocketmq.NewPushConsumer(
-		consumer.WithGroupName("testGroup"),
-		consumer.WithNameServer([]string{"127.0.0.1:9876"}),
-	)
-	err := c.Subscribe("test", consumer.MessageSelector{}, func(ctx context.Context,
-		msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
-		for i := range msgs {
-			fmt.Printf("subscribe callback: %v \n", msgs[i])
-		}
+	// hostname, _ := os.Hostname()
+	consumers := []rocketmq.PushConsumer{}
 
+	//	for i := 0; i < 5; i++ {
+	c, err := rocketmq.NewPushConsumer(
+		consumer.WithGroupName("easybike_gateway_mock_consumer"),
+		consumer.WithNameServer([]string{"10.111.75.96:9876", "10.111.75.95:9876"}),
+		// consumer.WithInstance(fmt.Sprintf("%s_%d", hostname, i)),
+	)
+	if err != nil {
+		rlog.Fatal(fmt.Sprintf("fail to new pullConsumer: %s", err), nil)
+		return
+	}
+
+	selector := consumer.MessageSelector{
+		Type:       consumer.TAG,
+		Expression: "TagA || TagC",
+	}
+
+	selector = consumer.MessageSelector{}
+
+	err = c.Subscribe("tcp_new_message_exchange", selector, func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+		fmt.Printf("subscribe callback: %v \n", msgs)
 		return consumer.ConsumeSuccess, nil
 	})
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
-	// Note: start after subscribe
-	err = c.Start()
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(-1)
+
+	if err := c.Start(); err != nil {
+		log.Println(err)
+		return
 	}
-	time.Sleep(time.Hour)
-	err = c.Shutdown()
-	if err != nil {
-		fmt.Printf("shutdown Consumer error: %s", err.Error())
+
+	consumers = append(consumers, c)
+	//	}
+
+	time.Sleep(time.Second * 10)
+
+	for _, c := range consumers {
+		if err := c.Shutdown(); err != nil {
+			log.Println(err)
+		}
 	}
 }

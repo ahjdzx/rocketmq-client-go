@@ -46,10 +46,18 @@ func main() {
 	// tags := []string{"TagA", "TagB", "TagC"}
 	for i := 0; ; i++ {
 		// tag := tags[i%3]
-		tag := "easybike_gw.mock"
-		msg := primitive.NewMessage("tcp_new_message_exchange",
-			[]byte(`{"commandCode":1,"id":"123"}`))
-		msg.WithTag(tag)
+
+		var tag string
+		var msg *primitive.Message
+		if i%2 == 0 {
+			tag = "powerbike_gw_lock.mock"
+			msg = primitive.NewMessage("ev_tcp_lock_message_exchange", []byte(`{"commandCode":1,"id":"123"}`))
+			msg.WithTag(tag)
+		} else {
+			tag = "powerbike_gw_common.mock"
+			msg = primitive.NewMessage("ev_tcp_common_message_exchange", []byte(`{"commandCode":7,"id":"123"}`))
+			msg.WithTag(tag)
+		}
 
 		res, err := p.SendSync(context.Background(), msg)
 		if err != nil {
@@ -57,6 +65,7 @@ func main() {
 		} else {
 			fmt.Printf("send message success: result=%s\n", res.String())
 		}
+
 	}
 	err = p.Shutdown()
 	if err != nil {
