@@ -37,7 +37,7 @@ func main() {
 		Type:       consumer.TAG,
 		Expression: "TagA || TagC",
 	}
-	err := c.Subscribe("TopicTest", selector, func(ctx context.Context,
+	err := c.Subscribe("test", selector, func(ctx context.Context,
 		msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 		fmt.Printf("subscribe callback: %v \n", msgs)
 		return consumer.ConsumeSuccess, nil

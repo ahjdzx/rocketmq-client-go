@@ -30,7 +30,7 @@ import (
 
 func main() {
 	p, err := rocketmq.NewProducer(
-		producer.WithNameServer([]string{"10.111.75.96:9876", "10.111.75.95:9876"}),
+		producer.WithNameServer([]string{"127.0.0.1:9876"}),
 		producer.WithRetry(2),
 	)
 	if err != nil {
@@ -43,12 +43,11 @@ func main() {
 		fmt.Printf("start producer error: %s", err.Error())
 		os.Exit(1)
 	}
-	// tags := []string{"TagA", "TagB", "TagC"}
-	for i := 0; ; i++ {
-		// tag := tags[i%3]
-		tag := "easybike_gw.mock"
-		msg := primitive.NewMessage("tcp_new_message_exchange",
-			[]byte(`{"commandCode":1,"id":"123"}`))
+	tags := []string{"TagA", "TagB1", "TagC1"}
+	for i := 0; i < 1e4; i++ {
+		tag := tags[i%3]
+		msg := primitive.NewMessage("test",
+			[]byte("Hello RocketMQ Go Client!"))
 		msg.WithTag(tag)
 
 		res, err := p.SendSync(context.Background(), msg)
